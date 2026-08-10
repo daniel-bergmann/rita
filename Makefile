@@ -3,7 +3,7 @@
 GO := /usr/local/go/bin/go
 
 build:
-	$(GO) build -o rita .
+	$(GO) build -ldflags="-s -w" -o rita .
 
 install: build
 	sudo ln -sf $(CURDIR)/rita /usr/local/bin/rita
