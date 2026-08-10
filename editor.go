@@ -31,6 +31,9 @@ type Editor struct {
 	pendingCmd rune
 	yankReg    []string
 
+	lang         *LangDef
+	blockComment bool
+
 	fileFindMode    bool
 	fileFindQuery   string
 	fileFindIdx     int
@@ -70,6 +73,8 @@ func NewEditor(filename string) (*Editor, error) {
 	} else {
 		ed.lines = []string{""}
 	}
+
+	ed.lang = detectLang(ed.filename)
 
 	return ed, nil
 }

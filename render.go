@@ -29,6 +29,13 @@ func (e *Editor) render() {
 	e.adjustScroll(sw-gutter, visibleRows)
 
 	gutterStyle := tcell.StyleDefault.Foreground(tcell.ColorGray)
+
+	blockComment := false
+	for li := 0; li < e.offsetRow && li < len(e.lines); li++ {
+		highlight(e.lines[li], e.lang, &blockComment)
+	}
+	e.blockComment = blockComment
+
 	for i := 0; i < visibleRows && i+e.offsetRow < len(e.lines); i++ {
 		lineIdx := i + e.offsetRow
 		lineNum := fmt.Sprintf("%*d", gutter-1, lineIdx+1)
@@ -39,10 +46,22 @@ func (e *Editor) render() {
 
 		line := e.lines[lineIdx]
 		x := gutter
+
+		var spans []Span
+		spans = highlight(line, e.lang, &blockComment)
+
+		spanIdx := 0
 		pos := 0
 		for _, r := range line {
 			if pos >= e.offsetCol && x < sw {
-				e.screen.SetContent(x, i, r, nil, tcell.StyleDefault)
+				st := tokenStyle(TokNormal)
+				for spanIdx < len(spans) && pos >= spans[spanIdx].End {
+					spanIdx++
+				}
+				if spanIdx < len(spans) && pos >= spans[spanIdx].Start && pos < spans[spanIdx].End {
+					st = tokenStyle(spans[spanIdx].Type)
+				}
+				e.screen.SetContent(x, i, r, nil, st)
 				x++
 			}
 			pos++
@@ -52,6 +71,7 @@ func (e *Editor) render() {
 			x++
 		}
 	}
+	e.blockComment = blockComment
 
 	e.screen.ShowCursor(gutter+e.cx-e.offsetCol, e.cy-e.offsetRow)
 	e.drawStatusBar(sw, sh-2)
@@ -191,6 +211,8 @@ func (e *Editor) handleKey(ev *tcell.EventKey) {
 			e.fileFindMode = false
 			e.fileFindQuery = ""
 			e.fileFindList = nil
+		} else if e.dirty {
+			e.msg = "E37: No write since last change (add ! to override)"
 		} else {
 			e.startFileFind()
 		}
@@ -297,6 +319,25 @@ func (e *Editor) drawFileFind(sw, sh int) {
 		if cursorX < sw {
 			e.screen.ShowCursor(cursorX, startY)
 		}
+	}
+}
+
+func tokenStyle(t TokenType) tcell.Style {
+	switch t {
+	case TokKeyword:
+		return tcell.StyleDefault.Foreground(tcell.ColorBlue)
+	case TokString:
+		return tcell.StyleDefault.Foreground(tcell.ColorGreen)
+	case TokComment:
+		return tcell.StyleDefault.Foreground(tcell.ColorGray)
+	case TokNumber:
+		return tcell.StyleDefault.Foreground(tcell.ColorRed)
+	case TokType:
+		return tcell.StyleDefault.Foreground(tcell.ColorTeal)
+	case TokFunction:
+		return tcell.StyleDefault.Foreground(tcell.ColorYellow)
+	default:
+		return tcell.StyleDefault
 	}
 }
 

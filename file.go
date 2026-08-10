@@ -36,5 +36,7 @@ func (e *Editor) openFile(name string) {
 	e.cx = 0
 	e.cy = 0
 	e.dirty = false
+	e.blockComment = false
+	e.lang = detectLang(name)
 	e.msg = fmt.Sprintf("\"%s\" %dL", name, len(e.lines))
 }
