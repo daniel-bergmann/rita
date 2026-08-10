@@ -64,6 +64,10 @@ func (e *Editor) handleNormal(ev *tcell.EventKey) {
 		e.putAfter()
 	case ch == 'P':
 		e.putBefore()
+	case ch == 'n':
+		e.searchNext()
+	case ch == 'N':
+		e.searchPrev()
 	case ch == ':' || ch == '/':
 		e.mode = ModeCommand
 		if ch == ':' {

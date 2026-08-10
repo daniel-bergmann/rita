@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"path/filepath"
+	"sort"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -49,6 +50,11 @@ func (e *Editor) render() {
 
 		var spans []Span
 		spans = highlight(line, e.lang, &blockComment)
+
+		if e.lastSearch != "" {
+			matches := lineMatches(lineIdx, e.searchMatches)
+			spans = mergeSearchSpans(spans, matches, len(e.lastSearch))
+		}
 
 		spanIdx := 0
 		pos := 0
@@ -398,9 +404,49 @@ func tokenStyle(t TokenType) tcell.Style {
 		return tcell.StyleDefault.Foreground(tcell.ColorTeal)
 	case TokFunction:
 		return tcell.StyleDefault.Foreground(tcell.ColorYellow)
+	case TokSearch:
+		return tcell.StyleDefault.Background(tcell.ColorYellow).Foreground(tcell.ColorBlack)
 	default:
 		return tcell.StyleDefault
 	}
+}
+
+func lineMatches(lineIdx int, matches []matchPos) []matchPos {
+	var result []matchPos
+	for _, m := range matches {
+		if m.line == lineIdx {
+			result = append(result, m)
+		}
+	}
+	return result
+}
+
+func mergeSearchSpans(spans []Span, matches []matchPos, queryLen int) []Span {
+	for _, m := range matches {
+		spans = append(spans, Span{m.col, m.col + queryLen, TokSearch})
+	}
+	sort.Slice(spans, func(i, j int) bool {
+		if spans[i].Start != spans[j].Start {
+			return spans[i].Start < spans[j].Start
+		}
+		return spans[i].Type == TokSearch
+	})
+
+	merged := spans[:0]
+	for _, s := range spans {
+		if len(merged) > 0 && merged[len(merged)-1].End > s.Start && s.Type != TokSearch {
+			continue
+		}
+		if len(merged) > 0 && merged[len(merged)-1].End > s.Start && s.Type == TokSearch {
+			prev := &merged[len(merged)-1]
+			if prev.End >= s.End {
+				continue
+			}
+			s.Start = prev.End
+		}
+		merged = append(merged, s)
+	}
+	return merged
 }
 
 func truncatePath(path string, width int, query string) string {

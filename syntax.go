@@ -17,6 +17,7 @@ const (
 	TokType
 	TokFunction
 	TokOperator
+	TokSearch
 )
 
 type LangDef struct {

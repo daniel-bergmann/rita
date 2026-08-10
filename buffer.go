@@ -223,36 +223,80 @@ func (e *Editor) openLineAbove() {
 	e.dirty = true
 }
 
+type matchPos struct {
+	line, col int
+}
+
 func (e *Editor) search(query string) {
-	for i := e.cy; i < len(e.lines); i++ {
-		start := 0
-		if i == e.cy {
-			start = e.cx + 1
-		}
-		rl := runeLen(e.lines[i])
-		if start >= rl {
-			continue
-		}
-		bp := bytePos(e.lines[i], start)
-		idx := strings.Index(e.lines[i][bp:], query)
-		if idx >= 0 {
-			e.cy = i
-			e.cx = start + utf8.RuneCountInString(e.lines[i][bp : bp+idx])
-			e.clampCursor()
-			return
+	e.lastSearch = query
+	e.searchMatches = nil
+
+	for i := 0; i < len(e.lines); i++ {
+		off := 0
+		for {
+			idx := strings.Index(e.lines[i][off:], query)
+			if idx < 0 {
+				break
+			}
+			e.searchMatches = append(e.searchMatches, matchPos{
+				line: i,
+				col:  utf8.RuneCountInString(e.lines[i][:off+idx]),
+			})
+			off += idx + len(query)
 		}
 	}
 
-	for i := 0; i <= e.cy; i++ {
-		idx := strings.Index(e.lines[i], query)
-		if idx >= 0 {
-			e.cy = i
-			e.cx = utf8.RuneCountInString(e.lines[i][:idx])
-			e.clampCursor()
-			return
+	if len(e.searchMatches) == 0 {
+		e.msg = fmt.Sprintf("Pattern not found: %s", query)
+		return
+	}
+
+	e.searchIdx = -1
+	for idx, m := range e.searchMatches {
+		if m.line > e.cy || (m.line == e.cy && m.col > e.cx) {
+			e.searchIdx = idx
+			break
 		}
 	}
-	e.msg = fmt.Sprintf("Pattern not found: %s", query)
+
+	if e.searchIdx < 0 {
+		e.searchIdx = 0
+	}
+
+	m := e.searchMatches[e.searchIdx]
+	e.cy = m.line
+	e.cx = m.col
+	e.clampCursor()
+}
+
+func (e *Editor) searchNext() {
+	if len(e.searchMatches) == 0 {
+		e.msg = "E35: No previous regular expression"
+		return
+	}
+	e.searchIdx++
+	if e.searchIdx >= len(e.searchMatches) {
+		e.searchIdx = 0
+	}
+	m := e.searchMatches[e.searchIdx]
+	e.cy = m.line
+	e.cx = m.col
+	e.clampCursor()
+}
+
+func (e *Editor) searchPrev() {
+	if len(e.searchMatches) == 0 {
+		e.msg = "E35: No previous regular expression"
+		return
+	}
+	e.searchIdx--
+	if e.searchIdx < 0 {
+		e.searchIdx = len(e.searchMatches) - 1
+	}
+	m := e.searchMatches[e.searchIdx]
+	e.cy = m.line
+	e.cx = m.col
+	e.clampCursor()
 }
 
 func (e *Editor) scrollView(dx, dy int) {

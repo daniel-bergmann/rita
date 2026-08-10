@@ -31,6 +31,10 @@ type Editor struct {
 	pendingCmd rune
 	yankReg    []string
 
+	lastSearch    string
+	searchMatches []matchPos
+	searchIdx     int
+
 	lang         *LangDef
 	blockComment bool
 
