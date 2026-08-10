@@ -355,9 +355,16 @@ func (e *Editor) handlePendingNormal(ev *tcell.EventKey) {
 	switch e.pendingCmd {
 	case 'g':
 		if ch == 'g' {
-			e.cy = 0
-			e.clampCursor()
+			e.pendingCmd = 'G'
+			return
 		}
+	case 'G':
+		if ch == 'g' {
+			e.cy = len(e.lines) / 2
+		} else {
+			e.cy = 0
+		}
+		e.clampCursor()
 	case 'd':
 		if ch == 'd' {
 			e.deleteLine()
