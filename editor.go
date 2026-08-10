@@ -30,6 +30,12 @@ type Editor struct {
 
 	pendingCmd rune
 	yankReg    []string
+
+	fileFindMode    bool
+	fileFindQuery   string
+	fileFindIdx     int
+	fileFindList    []string
+	fileFindLoading bool
 }
 
 func NewEditor(filename string) (*Editor, error) {

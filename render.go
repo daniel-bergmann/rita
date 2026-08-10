@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 
 	"github.com/gdamore/tcell/v2"
 )
@@ -55,6 +56,10 @@ func (e *Editor) render() {
 	e.screen.ShowCursor(gutter+e.cx-e.offsetCol, e.cy-e.offsetRow)
 	e.drawStatusBar(sw, sh-2)
 	e.drawCmdLine(sw, sh-1)
+
+	if e.fileFindMode {
+		e.drawFileFind(sw, sh)
+	}
 
 	e.screen.Show()
 }
@@ -181,6 +186,20 @@ func (e *Editor) handleMouse(ev *tcell.EventMouse) {
 }
 
 func (e *Editor) handleKey(ev *tcell.EventKey) {
+	if ev.Key() == tcell.KeyCtrlP || ev.Rune() == 16 {
+		if e.fileFindMode {
+			e.fileFindMode = false
+			e.fileFindQuery = ""
+			e.fileFindList = nil
+		} else {
+			e.startFileFind()
+		}
+		return
+	}
+	if e.fileFindMode {
+		e.handleFileFindKey(ev)
+		return
+	}
 	e.msg = ""
 
 	switch e.mode {
@@ -191,4 +210,110 @@ func (e *Editor) handleKey(ev *tcell.EventKey) {
 	case ModeCommand:
 		e.handleCommand(ev)
 	}
+}
+
+func (e *Editor) drawFileFind(sw, sh int) {
+	if e.fileFindLoading || e.fileFindList == nil {
+		e.scanFiles()
+	}
+
+	files := e.filteredFiles()
+
+	popupW := sw * 3 / 5
+	if popupW < 40 {
+		popupW = sw - 4
+	}
+	popupH := sh * 2 / 3
+	if popupH < 10 {
+		popupH = sh - 4
+	}
+	startX := (sw - popupW) / 2
+	startY := (sh - popupH) / 2
+
+	bg := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorBlack)
+	selected := tcell.StyleDefault.Background(tcell.ColorBlue).Foreground(tcell.ColorWhite)
+
+	for y := startY; y < startY+popupH && y < sh; y++ {
+		for x := startX; x < startX+popupW && x < sw; x++ {
+			e.screen.SetContent(x, y, ' ', nil, bg)
+		}
+	}
+
+	queryStr := "> " + e.fileFindQuery
+	for i, ch := range queryStr {
+		x := startX + 1 + i
+		if x < startX+popupW-1 && x < sw {
+			e.screen.SetContent(x, startY, ch, nil, selected)
+		}
+	}
+
+	visible := popupH - 2
+	if visible < 0 {
+		visible = 0
+	}
+
+	offset := 0
+	if e.fileFindIdx >= visible {
+		offset = e.fileFindIdx - visible + 1
+	}
+
+	for i := 0; i < visible && i+offset < len(files); i++ {
+		f := files[i+offset]
+		row := startY + 1 + i
+		if row >= sh || row >= startY+popupH {
+			break
+		}
+
+		display := truncatePath(f, popupW-4, e.fileFindQuery)
+		st := bg
+		if i+offset == e.fileFindIdx {
+			st = selected
+			for x := startX; x < startX+popupW && x < sw; x++ {
+				e.screen.SetContent(x, row, ' ', nil, st)
+			}
+		}
+
+		for j, ch := range display {
+			x := startX + 2 + j
+			if x < startX+popupW-1 && x < sw {
+				e.screen.SetContent(x, row, ch, nil, st)
+			}
+		}
+	}
+
+	countStr := fmt.Sprintf("%d/%d", e.fileFindIdx+1, len(files))
+	for i, ch := range countStr {
+		x := startX + popupW - len(countStr) - 2 + i
+		if x >= startX && x < sw {
+			e.screen.SetContent(x, startY, ch, nil, selected)
+		}
+	}
+
+	if e.fileFindMode {
+		cursorX := startX + 2
+		if len(e.fileFindQuery) < popupW-4 {
+			cursorX = startX + 2 + len(e.fileFindQuery)
+		}
+		if cursorX < sw {
+			e.screen.ShowCursor(cursorX, startY)
+		}
+	}
+}
+
+func truncatePath(path string, width int, query string) string {
+	if len(path) <= width {
+		return path
+	}
+	name := filepath.Base(path)
+	if len(name) > width {
+		return name[:width]
+	}
+	dir := filepath.Dir(path)
+	available := width - len(name) - 3
+	if available > 0 && len(dir) > available {
+		dir = "..." + dir[len(dir)-available:]
+	} else if available <= 0 {
+		return name[:width]
+	}
+	return dir + "/" + name
 }
