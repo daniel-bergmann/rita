@@ -1,0 +1,11 @@
+rita
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+go.work.sum
+test.txt
