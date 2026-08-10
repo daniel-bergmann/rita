@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>rita</title>
+</head>
+<body>
+
+<h1>rita</h1>
+<p>A minimal vim-like text editor.</p>
+
+<h2>Install</h2>
+<pre>git clone https://github.com/daniel/rita
+cd rita
+make install</pre>
+
+<h2>Usage</h2>
+<pre>rita              open empty buffer
+rita file.txt     open a file</pre>
+
+<h2>Modes</h2>
+<table>
+<tr><td>Normal</td><td>default, press <kbd>Esc</kbd> to return</td></tr>
+<tr><td>Insert</td><td><kbd>i</kbd> <kbd>a</kbd> <kbd>o</kbd> <kbd>O</kbd></td></tr>
+<tr><td>Command</td><td><kbd>:</kbd> <kbd>/</kbd></td></tr>
+</table>
+
+<h2>Movement</h2>
+<table>
+<tr><td><kbd>h</kbd> <kbd>j</kbd> <kbd>k</kbd> <kbd>l</kbd></td><td>move cursor (also arrow keys)</td></tr>
+<tr><td><kbd>w</kbd></td><td>next word</td></tr>
+<tr><td><kbd>b</kbd></td><td>previous word</td></tr>
+<tr><td><kbd>0</kbd></td><td>start of line</td></tr>
+<tr><td><kbd>$</kbd></td><td>end of line</td></tr>
+<tr><td><kbd>gg</kbd></td><td>top of file</td></tr>
+<tr><td><kbd>ggg</kbd></td><td>center of file</td></tr>
+<tr><td><kbd>G</kbd></td><td>bottom of file</td></tr>
+</table>
+
+<h2>Editing</h2>
+<table>
+<tr><td><kbd>i</kbd></td><td>insert before cursor</td></tr>
+<tr><td><kbd>a</kbd></td><td>append after cursor</td></tr>
+<tr><td><kbd>I</kbd></td><td>insert at start of line</td></tr>
+<tr><td><kbd>A</kbd></td><td>append at end of line</td></tr>
+<tr><td><kbd>o</kbd></td><td>open line below</td></tr>
+<tr><td><kbd>O</kbd></td><td>open line above</td></tr>
+<tr><td><kbd>x</kbd></td><td>delete character</td></tr>
+<tr><td><kbd>dd</kbd></td><td>delete line</td></tr>
+<tr><td><kbd>yy</kbd></td><td>yank (copy) line</td></tr>
+<tr><td><kbd>p</kbd></td><td>paste after</td></tr>
+<tr><td><kbd>P</kbd></td><td>paste before</td></tr>
+</table>
+
+<h2>Scrolling</h2>
+<table>
+<tr><td><kbd>Ctrl+E</kbd></td><td>scroll down one line</td></tr>
+<tr><td><kbd>Ctrl+Y</kbd></td><td>scroll up one line</td></tr>
+<tr><td><kbd>Ctrl+D</kbd></td><td>scroll down half page</td></tr>
+<tr><td><kbd>Ctrl+U</kbd></td><td>scroll up half page</td></tr>
+<tr><td><kbd>Ctrl+F</kbd></td><td>scroll down full page</td></tr>
+<tr><td><kbd>Ctrl+B</kbd></td><td>scroll up full page</td></tr>
+<tr><td>mouse wheel / touchpad</td><td>scroll</td></tr>
+</table>
+
+<h2>File Operations</h2>
+<table>
+<tr><td><kbd>Ctrl+P</kbd></td><td>fuzzy file finder (save first)</td></tr>
+<tr><td><kbd>:w</kbd></td><td>save</td></tr>
+<tr><td><kbd>:q</kbd></td><td>quit</td></tr>
+<tr><td><kbd>:q!</kbd></td><td>force quit</td></tr>
+<tr><td><kbd>:wq</kbd></td><td>save and quit</td></tr>
+<tr><td><kbd>:e file</kbd></td><td>open file</td></tr>
+<tr><td><kbd>/pattern</kbd></td><td>search forward</td></tr>
+</table>
+
+<h2>Syntax Highlighting</h2>
+<p>Auto-detected by file extension for Go, Python, JavaScript, TypeScript, C, C++, Rust, Java, Ruby, PHP, HTML, CSS, JSON, YAML, XML, Markdown, Bash, SQL, Kotlin, Swift, Dockerfile, and Makefile.</p>
+
+</body>
+</html>
