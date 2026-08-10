@@ -267,7 +267,7 @@ func (e *Editor) drawFileFind(sw, sh int) {
 	startX := (sw - popupW) / 2
 	startY := (sh - popupH) / 2
 
-	blue := tcell.StyleDefault.Background(tcell.ColorBlue).Foreground(tcell.ColorWhite)
+	blue := tcell.StyleDefault.Background(tcell.NewRGBColor(0, 0, 170)).Foreground(tcell.ColorWhite)
 	cyan := tcell.StyleDefault.Background(tcell.ColorTeal).Foreground(tcell.ColorWhite)
 	white := tcell.StyleDefault.Background(tcell.ColorWhite).Foreground(tcell.ColorBlack)
 	shadow := tcell.StyleDefault.Background(tcell.ColorBlack)
@@ -289,7 +289,7 @@ func (e *Editor) drawFileFind(sw, sh int) {
 		}
 	}
 
-	drawBox(e.screen, startX, startY, popupW, popupH, tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.ColorBlue))
+	drawBox(e.screen, startX, startY, popupW, popupH, tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.NewRGBColor(0, 0, 170)))
 
 	title := " Find File "
 	titleX := startX + 2
@@ -300,7 +300,7 @@ func (e *Editor) drawFileFind(sw, sh int) {
 		}
 	}
 	for x := titleX + len(title); x < startX+popupW-1 && x < sw; x++ {
-		e.screen.SetContent(x, startY, '─', nil, tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.ColorBlue))
+		e.screen.SetContent(x, startY, '─', nil, tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.NewRGBColor(0, 0, 170)))
 	}
 
 	queryRow := startY + 1
