@@ -93,25 +93,44 @@ func (e *Editor) Run() {
 	}
 }
 
+func (e *Editor) gutterWidth() int {
+	n := len(e.lines)
+	w := 2
+	for n > 0 {
+		w++
+		n /= 10
+	}
+	return w
+}
+
 func (e *Editor) render() {
 	e.screen.Clear()
 	sw, sh := e.screen.Size()
+	gutter := e.gutterWidth()
 
 	visibleRows := sh - 2
 	if visibleRows < 1 {
 		visibleRows = 1
 	}
-	e.adjustScroll(sw, visibleRows)
+	e.adjustScroll(sw-gutter, visibleRows)
+
+	gutterStyle := tcell.StyleDefault.Foreground(tcell.ColorGray)
 	for i := 0; i < visibleRows && i+e.offsetRow < len(e.lines); i++ {
 		lineIdx := i + e.offsetRow
+		lineNum := fmt.Sprintf("%*d", gutter-1, lineIdx+1)
+		for j, ch := range lineNum {
+			e.screen.SetContent(j, i, ch, nil, gutterStyle)
+		}
+		e.screen.SetContent(gutter-1, i, ' ', nil, tcell.StyleDefault)
+
 		line := e.lines[lineIdx]
 		colStart := e.offsetCol
-		for j := 0; j < sw && j+colStart < len(line); j++ {
-			ch := rune(line[j+colStart])
-			e.screen.SetContent(j, i, ch, nil, tcell.StyleDefault)
+		for j := 0; j < sw-gutter && j+colStart < len(line); j++ {
+			e.screen.SetContent(gutter+j, i, rune(line[j+colStart]), nil, tcell.StyleDefault)
 		}
 	}
-	e.screen.ShowCursor(e.cx-e.offsetCol, e.cy-e.offsetRow)
+
+	e.screen.ShowCursor(gutter+e.cx-e.offsetCol, e.cy-e.offsetRow)
 	e.drawStatusBar(sw, sh-2)
 	e.drawCmdLine(sw, sh-1)
 
@@ -210,8 +229,13 @@ func (e *Editor) handleEvent(ev tcell.Event) {
 func (e *Editor) handleMouse(ev *tcell.EventMouse) {
 	x, y := ev.Position()
 	_, sh := e.screen.Size()
+	gutter := e.gutterWidth()
 	if y >= sh-2 {
 		return
+	}
+	x -= gutter
+	if x < 0 {
+		x = 0
 	}
 	targetRow := y + e.offsetRow
 	targetCol := x + e.offsetCol
