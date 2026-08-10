@@ -37,9 +37,18 @@ func (e *Editor) render() {
 		e.screen.SetContent(gutter-1, i, ' ', nil, tcell.StyleDefault)
 
 		line := e.lines[lineIdx]
-		colStart := e.offsetCol
-		for j := 0; j < sw-gutter && j+colStart < len(line); j++ {
-			e.screen.SetContent(gutter+j, i, rune(line[j+colStart]), nil, tcell.StyleDefault)
+		x := gutter
+		pos := 0
+		for _, r := range line {
+			if pos >= e.offsetCol && x < sw {
+				e.screen.SetContent(x, i, r, nil, tcell.StyleDefault)
+				x++
+			}
+			pos++
+		}
+		for x < sw {
+			e.screen.SetContent(x, i, ' ', nil, tcell.StyleDefault)
+			x++
 		}
 	}
 
@@ -162,8 +171,8 @@ func (e *Editor) handleMouse(ev *tcell.EventMouse) {
 	if targetCol < 0 {
 		targetCol = 0
 	}
-	if targetCol > len(e.lines[targetRow]) {
-		targetCol = len(e.lines[targetRow])
+	if targetCol > runeLen(e.lines[targetRow]) {
+		targetCol = runeLen(e.lines[targetRow])
 	}
 
 	e.cy = targetRow

@@ -30,7 +30,7 @@ func (e *Editor) handleNormal(ev *tcell.EventKey) {
 	case ch == '0':
 		e.cx = 0
 	case ch == '$':
-		e.cx = len(e.currentLine())
+		e.cx = runeLen(e.currentLine())
 	case ch == 'g':
 		e.pendingCmd = 'g'
 	case ch == 'G':
@@ -46,7 +46,7 @@ func (e *Editor) handleNormal(ev *tcell.EventKey) {
 		e.cx = 0
 		e.mode = ModeInsert
 	case ch == 'A':
-		e.cx = len(e.currentLine())
+		e.cx = runeLen(e.currentLine())
 		e.mode = ModeInsert
 	case ch == 'o':
 		e.openLineBelow()

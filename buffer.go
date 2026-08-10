@@ -3,7 +3,25 @@ package main
 import (
 	"fmt"
 	"strings"
+	"unicode"
+	"unicode/utf8"
 )
+
+func runeLen(s string) int {
+	return utf8.RuneCountInString(s)
+}
+
+func bytePos(s string, runeIdx int) int {
+	b := 0
+	for i := 0; i < runeIdx; i++ {
+		_, size := utf8.DecodeRuneInString(s[b:])
+		if size == 0 {
+			break
+		}
+		b += size
+	}
+	return b
+}
 
 func (e *Editor) currentLine() string {
 	if e.cy < 0 || e.cy >= len(e.lines) {
@@ -26,8 +44,9 @@ func (e *Editor) clampCursor() {
 	if e.cx < 0 {
 		e.cx = 0
 	}
-	if e.cx > len(e.lines[e.cy]) {
-		e.cx = len(e.lines[e.cy])
+	rl := runeLen(e.lines[e.cy])
+	if e.cx > rl {
+		e.cx = rl
 	}
 }
 
@@ -38,12 +57,12 @@ func (e *Editor) moveCursor(dx, dy int) {
 }
 
 func (e *Editor) nextWord() {
-	line := e.currentLine()
+	runes := []rune(e.currentLine())
 	i := e.cx
-	for i < len(line) && isWordChar(rune(line[i])) {
+	for i < len(runes) && isWordChar(runes[i]) {
 		i++
 	}
-	for i < len(line) && !isWordChar(rune(line[i])) {
+	for i < len(runes) && !isWordChar(runes[i]) {
 		i++
 	}
 	e.cx = i
@@ -53,17 +72,17 @@ func (e *Editor) prevWord() {
 	if e.cx == 0 {
 		if e.cy > 0 {
 			e.cy--
-			e.cx = len(e.currentLine())
+			e.cx = runeLen(e.currentLine())
 			e.prevWord()
 		}
 		return
 	}
-	line := e.currentLine()
+	runes := []rune(e.currentLine())
 	i := e.cx - 1
-	for i > 0 && !isWordChar(rune(line[i])) {
+	for i > 0 && !isWordChar(runes[i]) {
 		i--
 	}
-	for i > 0 && isWordChar(rune(line[i-1])) {
+	for i > 0 && isWordChar(runes[i-1]) {
 		i--
 	}
 	e.cx = i
@@ -78,15 +97,30 @@ func isWordChar(ch rune) bool {
 
 func (e *Editor) insertChar(ch rune) {
 	line := e.lines[e.cy]
-	e.lines[e.cy] = line[:e.cx] + string(ch) + line[e.cx:]
+
+	if e.cx > 0 && (unicode.Is(unicode.Mn, ch) || unicode.Is(unicode.Mc, ch)) {
+		runes := []rune(line)
+		if e.cx <= len(runes) && e.cx > 0 {
+			combined := string([]rune{runes[e.cx-1], ch})
+			prev := string(runes[:e.cx-1])
+			after := string(runes[e.cx:])
+			e.lines[e.cy] = prev + combined + after
+			e.dirty = true
+			return
+		}
+	}
+
+	bp := bytePos(line, e.cx)
+	e.lines[e.cy] = line[:bp] + string(ch) + line[bp:]
 	e.cx++
 	e.dirty = true
 }
 
 func (e *Editor) insertNewline() {
 	line := e.lines[e.cy]
-	e.lines[e.cy] = line[:e.cx]
-	rest := line[e.cx:]
+	bp := bytePos(line, e.cx)
+	e.lines[e.cy] = line[:bp]
+	rest := line[bp:]
 
 	e.lines = append(e.lines[:e.cy+1], append([]string{rest}, e.lines[e.cy+1:]...)...)
 	e.cy++
@@ -97,11 +131,13 @@ func (e *Editor) insertNewline() {
 func (e *Editor) backspace() {
 	if e.cx > 0 {
 		line := e.lines[e.cy]
-		e.lines[e.cy] = line[:e.cx-1] + line[e.cx:]
+		bp := bytePos(line, e.cx)
+		prev := bytePos(line, e.cx-1)
+		e.lines[e.cy] = line[:prev] + line[bp:]
 		e.cx--
 		e.dirty = true
 	} else if e.cy > 0 {
-		prevLen := len(e.lines[e.cy-1])
+		prevLen := runeLen(e.lines[e.cy-1])
 		e.lines[e.cy-1] += e.lines[e.cy]
 		e.lines = append(e.lines[:e.cy], e.lines[e.cy+1:]...)
 		e.cy--
@@ -112,8 +148,11 @@ func (e *Editor) backspace() {
 
 func (e *Editor) deleteChar() {
 	line := e.lines[e.cy]
-	if e.cx < len(line) {
-		e.lines[e.cy] = line[:e.cx] + line[e.cx+1:]
+	rl := runeLen(line)
+	if e.cx < rl {
+		bp := bytePos(line, e.cx)
+		next := bytePos(line, e.cx+1)
+		e.lines[e.cy] = line[:bp] + line[next:]
 		e.dirty = true
 	} else if e.cy < len(e.lines)-1 {
 		e.lines[e.cy] += e.lines[e.cy+1]
@@ -185,19 +224,20 @@ func (e *Editor) openLineAbove() {
 }
 
 func (e *Editor) search(query string) {
-
 	for i := e.cy; i < len(e.lines); i++ {
 		start := 0
 		if i == e.cy {
 			start = e.cx + 1
 		}
-		if start >= len(e.lines[i]) {
+		rl := runeLen(e.lines[i])
+		if start >= rl {
 			continue
 		}
-		idx := strings.Index(e.lines[i][start:], query)
+		bp := bytePos(e.lines[i], start)
+		idx := strings.Index(e.lines[i][bp:], query)
 		if idx >= 0 {
 			e.cy = i
-			e.cx = start + idx
+			e.cx = start + utf8.RuneCountInString(e.lines[i][bp : bp+idx])
 			e.clampCursor()
 			return
 		}
@@ -207,7 +247,7 @@ func (e *Editor) search(query string) {
 		idx := strings.Index(e.lines[i], query)
 		if idx >= 0 {
 			e.cy = i
-			e.cx = idx
+			e.cx = utf8.RuneCountInString(e.lines[i][:idx])
 			e.clampCursor()
 			return
 		}
