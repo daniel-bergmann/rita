@@ -176,6 +176,21 @@ func (e *Editor) handleEvent(ev tcell.Event) {
 func (e *Editor) handleMouse(ev *tcell.EventMouse) {
 	x, y := ev.Position()
 	_, sh := e.screen.Size()
+
+	btn := ev.Buttons()
+	if btn&tcell.WheelUp != 0 || btn&tcell.Button4 != 0 {
+		e.scrollView(0, -3)
+		return
+	}
+	if btn&tcell.WheelDown != 0 || btn&tcell.Button5 != 0 {
+		e.scrollView(0, 3)
+		return
+	}
+
+	if btn&tcell.Button1 == 0 {
+		return
+	}
+
 	gutter := e.gutterWidth()
 	if y >= sh-2 {
 		return

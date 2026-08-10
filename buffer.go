@@ -255,12 +255,33 @@ func (e *Editor) search(query string) {
 	e.msg = fmt.Sprintf("Pattern not found: %s", query)
 }
 
+func (e *Editor) scrollView(dx, dy int) {
+	e.offsetRow += dy
+	e.offsetCol += dx
+	if e.offsetRow < 0 {
+		e.offsetRow = 0
+	}
+	if e.offsetCol < 0 {
+		e.offsetCol = 0
+	}
+	_, sh := e.screen.Size()
+	maxRow := len(e.lines) - (sh - 2)
+	if maxRow < 0 {
+		maxRow = 0
+	}
+	if e.offsetRow > maxRow {
+		e.offsetRow = maxRow
+	}
+	e.clampCursor()
+}
+
 func (e *Editor) scrollHalfUp() {
 	_, sh := e.screen.Size()
 	half := (sh - 2) / 2
 	if half < 1 {
 		half = 1
 	}
+	e.scrollView(0, -half)
 	e.moveCursor(0, -half)
 }
 
@@ -270,15 +291,26 @@ func (e *Editor) scrollHalfDown() {
 	if half < 1 {
 		half = 1
 	}
+	e.scrollView(0, half)
 	e.moveCursor(0, half)
 }
 
 func (e *Editor) scrollPageUp() {
 	_, sh := e.screen.Size()
+	e.scrollView(0, -(sh - 2))
 	e.moveCursor(0, -(sh - 2))
 }
 
 func (e *Editor) scrollPageDown() {
 	_, sh := e.screen.Size()
+	e.scrollView(0, sh-2)
 	e.moveCursor(0, sh-2)
+}
+
+func (e *Editor) scrollLineUp() {
+	e.scrollView(0, -1)
+}
+
+func (e *Editor) scrollLineDown() {
+	e.scrollView(0, 1)
 }

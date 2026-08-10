@@ -79,6 +79,10 @@ func (e *Editor) handleNormal(ev *tcell.EventKey) {
 		e.scrollPageUp()
 	case key == tcell.KeyCtrlF:
 		e.scrollPageDown()
+	case key == tcell.KeyCtrlE:
+		e.scrollLineDown()
+	case key == tcell.KeyCtrlY:
+		e.scrollLineUp()
 	}
 }
 

@@ -50,6 +50,7 @@ func NewEditor(filename string) (*Editor, error) {
 		return nil, err
 	}
 	screen.SetStyle(tcell.StyleDefault)
+	screen.EnableMouse()
 
 	ed := &Editor{
 		screen:   screen,
