@@ -83,6 +83,10 @@ func NewEditor(filename string) (*Editor, error) {
 func (e *Editor) Run() {
 	defer e.screen.Fini()
 
+	if e.filename == "" {
+		e.startFileFind()
+	}
+
 	for e.running {
 		e.render()
 		ev := e.screen.PollEvent()

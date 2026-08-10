@@ -267,49 +267,78 @@ func (e *Editor) drawFileFind(sw, sh int) {
 	startX := (sw - popupW) / 2
 	startY := (sh - popupH) / 2
 
-	bg := tcell.StyleDefault.Background(tcell.ColorGray).Foreground(tcell.ColorBlack)
-	selected := tcell.StyleDefault.Background(tcell.ColorBlue).Foreground(tcell.ColorWhite)
+	blue := tcell.StyleDefault.Background(tcell.ColorBlue).Foreground(tcell.ColorWhite)
+	cyan := tcell.StyleDefault.Background(tcell.ColorTeal).Foreground(tcell.ColorWhite)
+	white := tcell.StyleDefault.Background(tcell.ColorWhite).Foreground(tcell.ColorBlack)
+	shadow := tcell.StyleDefault.Background(tcell.ColorBlack)
 
-	for y := startY; y < startY+popupH && y < sh; y++ {
-		for x := startX; x < startX+popupW && x < sw; x++ {
-			e.screen.SetContent(x, y, ' ', nil, bg)
+	for y := startY + 1; y < startY+popupH && y < sh; y++ {
+		for x := startX + 1; x < startX+popupW-1 && x < sw; x++ {
+			e.screen.SetContent(x, y, ' ', nil, blue)
 		}
 	}
 
-	queryStr := "> " + e.fileFindQuery
-	for i, ch := range queryStr {
-		x := startX + 1 + i
+	for y := startY + 2; y < startY+popupH+1 && y < sh; y++ {
+		if startX+popupW < sw && y < sh {
+			e.screen.SetContent(startX+popupW, y, ' ', nil, shadow)
+		}
+	}
+	for x := startX + 1; x < startX+popupW+1 && x < sw; x++ {
+		if startY+popupH < sh && x < sw {
+			e.screen.SetContent(x, startY+popupH, ' ', nil, shadow)
+		}
+	}
+
+	drawBox(e.screen, startX, startY, popupW, popupH, tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.ColorBlue))
+
+	title := " Find File "
+	titleX := startX + 2
+	for i, ch := range title {
+		x := titleX + i
 		if x < startX+popupW-1 && x < sw {
-			e.screen.SetContent(x, startY, ch, nil, selected)
+			e.screen.SetContent(x, startY, ch, nil, white)
+		}
+	}
+	for x := titleX + len(title); x < startX+popupW-1 && x < sw; x++ {
+		e.screen.SetContent(x, startY, '─', nil, tcell.StyleDefault.Foreground(tcell.ColorWhite).Background(tcell.ColorBlue))
+	}
+
+	queryRow := startY + 1
+	e.screen.SetContent(startX+1, queryRow, ' ', nil, white)
+	e.screen.SetContent(startX+2, queryRow, '>', nil, white)
+	for i, ch := range e.fileFindQuery {
+		x := startX + 3 + i
+		if x < startX+popupW-1 && x < sw {
+			e.screen.SetContent(x, queryRow, ch, nil, white)
 		}
 	}
 
-	visible := popupH - 2
+	visible := popupH - 3
 	if visible < 0 {
 		visible = 0
 	}
 
 	offset := 0
-	if e.fileFindIdx >= visible {
+	if e.fileFindIdx >= visible && visible > 0 {
 		offset = e.fileFindIdx - visible + 1
 	}
 
 	for i := 0; i < visible && i+offset < len(files); i++ {
 		f := files[i+offset]
-		row := startY + 1 + i
-		if row >= sh || row >= startY+popupH {
+		row := startY + 2 + i
+		if row >= sh || row >= startY+popupH-1 {
 			break
 		}
 
-		display := truncatePath(f, popupW-4, e.fileFindQuery)
-		st := bg
+		st := blue
 		if i+offset == e.fileFindIdx {
-			st = selected
-			for x := startX; x < startX+popupW && x < sw; x++ {
+			st = cyan
+			for x := startX + 1; x < startX+popupW-1 && x < sw; x++ {
 				e.screen.SetContent(x, row, ' ', nil, st)
 			}
 		}
 
+		display := truncatePath(f, popupW-5, e.fileFindQuery)
 		for j, ch := range display {
 			x := startX + 2 + j
 			if x < startX+popupW-1 && x < sw {
@@ -321,19 +350,37 @@ func (e *Editor) drawFileFind(sw, sh int) {
 	countStr := fmt.Sprintf("%d/%d", e.fileFindIdx+1, len(files))
 	for i, ch := range countStr {
 		x := startX + popupW - len(countStr) - 2 + i
-		if x >= startX && x < sw {
-			e.screen.SetContent(x, startY, ch, nil, selected)
+		if x >= startX+1 && x < sw {
+			e.screen.SetContent(x, queryRow, ch, nil, white)
 		}
 	}
 
 	if e.fileFindMode {
-		cursorX := startX + 2
-		if len(e.fileFindQuery) < popupW-4 {
-			cursorX = startX + 2 + len(e.fileFindQuery)
+		cursorX := startX + 3 + len(e.fileFindQuery)
+		if cursorX >= startX+popupW-1 {
+			cursorX = startX + popupW - 2
 		}
 		if cursorX < sw {
-			e.screen.ShowCursor(cursorX, startY)
+			e.screen.ShowCursor(cursorX, queryRow)
 		}
+	}
+}
+
+func drawBox(s tcell.Screen, x, y, w, h int, style tcell.Style) {
+	if w < 2 || h < 2 {
+		return
+	}
+	s.SetContent(x, y, '╔', nil, style)
+	s.SetContent(x+w-1, y, '╗', nil, style)
+	s.SetContent(x, y+h-1, '╚', nil, style)
+	s.SetContent(x+w-1, y+h-1, '╝', nil, style)
+	for i := 1; i < w-1; i++ {
+		s.SetContent(x+i, y, '═', nil, style)
+		s.SetContent(x+i, y+h-1, '═', nil, style)
+	}
+	for i := 1; i < h-1; i++ {
+		s.SetContent(x, y+i, '║', nil, style)
+		s.SetContent(x+w-1, y+i, '║', nil, style)
 	}
 }
 
